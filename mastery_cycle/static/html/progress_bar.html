@@ -1,0 +1,11 @@
+{% load i18n %}
+
+<div class="mastery_cycle_progress_bar">
+    {% if done %}
+    <p>{% trans "Mastery:" %} {{ mastered }}</p>
+    {% else %}
+    <p>{% trans "Mastery:" %} {{ mastered }}</p>
+    <p>{% trans "Half Mastery:" %} {{ half_mastered }}</p>
+    <p>{% trans "To do:" %} {{ questions_left }}</p>
+    {% endif %}
+</div>

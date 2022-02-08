@@ -1,0 +1,13 @@
+/* CSS for MasteryCycleXBlock */
+
+.xblock-author_view-mastery_cycle .add-xblock-component .new-component .new-component-type .add-xblock-component-button {
+    display: none;
+}
+
+.xblock-author_view-mastery_cycle .add-xblock-component .new-component .new-component-type button[data-type="problem"]{
+    display: inline-block;
+}
+
+.xblock-validation-messages {
+    display: none;
+}
