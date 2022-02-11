@@ -2,6 +2,7 @@ import logging
 import pkg_resources
 import random
 from copy import copy
+from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 from opaque_keys.edx.locator import BlockUsageLocator
 from openedx.core.lib.gating.api import get_required_content
@@ -136,20 +137,9 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
 
     @XBlock.json_handler
     def check_problems(self, data, suffix=''):
-        problems_answered_count = 0
-        correct_answers = set()
-        incorrect_answers = set()
+        attempted_answers, correct_answers, incorrect_answers = self.review_answers()
 
-        for block_type, block_id in self.selected:
-            problem = self.runtime.get_block(self.location.course_key.make_usage_key(block_type, block_id))
-            problems_answered_count += 1 if problem.is_attempted() else 0
-
-            if problem.is_correct():
-                correct_answers.add((block_type, block_id))
-            else:
-                incorrect_answers.add((block_type, block_id))
-
-        if problems_answered_count != len(self.selected):
+        if attempted_answers != len(self.selected):
             return {
                 'status': 'not_all_answered',
                 'msg': _('Not all problems answered.'),
@@ -157,36 +147,8 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
             }
 
         user = self.runtime.service(self, "user")._django_user
-
-        for block_type, block_id in self.selected:
-            problem = self.runtime.get_block(self.location.course_key.make_usage_key(block_type, block_id))
-            reset_student_attempts(self.location.course_key, user, problem.location, user, delete_module=True)
-
-        mastered = {tuple(k) for k in self.mastered}
-        half_mastered = {tuple(k) for k in self.half_mastered}
-        incorrect = {tuple(k) for k in self.incorrect}
-
-        percent_problems_correct = len(correct_answers) * 100 / len(self.selected)
-
-        if percent_problems_correct > 50:
-            if self.pass_count == 0:
-                mastered = correct_answers
-                incorrect = incorrect_answers
-            else:
-                mastered |= half_mastered.intersection(correct_answers)  # answered correctly twice
-                half_mastered = half_mastered.symmetric_difference(correct_answers)  # answered correctly once
-                incorrect |= incorrect_answers
-                incorrect = incorrect.difference(mastered, half_mastered)
-        else:
-            incorrect |= incorrect_answers
-            incorrect |= correct_answers
-            incorrect = incorrect.difference(mastered, half_mastered)
-
-        self.mastered = list(mastered)
-        self.half_mastered = list(half_mastered)
-        self.incorrect = list(incorrect)
-        self.pass_count += 1
-        self.selected = []
+        self.save_student_data(correct_answers, incorrect_answers)
+        self.reset_student_problems(user)
 
         if len(self.mastered) >= self.max_count:
             self.publish_grade()
@@ -201,21 +163,7 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         url = ''
 
         if self.pass_count == 1:
-            prerequisite_usage_key, __, __ = get_required_content(
-                self.location.course_key,
-                self.get_parent().get_parent().location  # current subsection
-            )
-            if prerequisite_usage_key:
-                prerequisite_usage_key = BlockUsageLocator.from_string(prerequisite_usage_key)
-                reset_student_attempts(self.location.course_key, user, prerequisite_usage_key, user, delete_module=True)
-                button_text = _('Review the material')
-                url = reverse(
-                    'jump_to',
-                    kwargs={
-                        'course_id': self.location.course_key,
-                        'location': text_type(prerequisite_usage_key),
-                    }
-                )
+            button_text, url = self.reset_student_prerequisite(user)
 
         return {
             'status': 'not_done',
@@ -223,6 +171,82 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
             'button_text': button_text,
             'url': url
         }
+
+    def review_answers(self):
+        attempted_answers = 0
+        correct_answers = set()
+        incorrect_answers = set()
+
+        for block_type, block_id in self.selected:
+            problem = self.runtime.get_block(self.location.course_key.make_usage_key(block_type, block_id))
+            attempted_answers += 1 if problem.is_attempted() else 0
+
+            if problem.is_correct():
+                correct_answers.add((block_type, block_id))
+            else:
+                incorrect_answers.add((block_type, block_id))
+
+        return attempted_answers, correct_answers, incorrect_answers
+
+    def save_student_data(self, correct_answers, incorrect_answers):
+        mastered = {tuple(k) for k in self.mastered}
+        half_mastered = {tuple(k) for k in self.half_mastered}
+        incorrect = {tuple(k) for k in self.incorrect}
+
+        percent_problems_correct = len(correct_answers) * 100 / len(self.selected)
+
+        if percent_problems_correct > 50:
+            if self.pass_count == 0:
+                mastered = correct_answers
+                incorrect = incorrect_answers
+            else:
+                mastered |= half_mastered.intersection(correct_answers)  # answered correctly twice
+                half_mastered = half_mastered.symmetric_difference(correct_answers) - mastered  # answered correctly once
+                incorrect |= incorrect_answers
+                incorrect = incorrect.difference(mastered, half_mastered)
+        else:
+            incorrect |= incorrect_answers
+            incorrect |= correct_answers
+            incorrect = incorrect.difference(mastered, half_mastered)
+
+        self.mastered = list(mastered)
+        self.half_mastered = list(half_mastered)
+        self.incorrect = list(incorrect)
+        self.pass_count += 1
+
+    def reset_student_problems(self, user):
+        for block_type, block_id in self.selected:
+            problem = self.runtime.get_block(self.location.course_key.make_usage_key(block_type, block_id))
+            try:
+                reset_student_attempts(self.location.course_key, user, problem.location, user, delete_module=True)
+            except ObjectDoesNotExist:
+                pass
+        self.selected = []
+
+    def reset_student_prerequisite(self, user):
+        button_text = _('Continue')
+        url = ''
+        prerequisite_usage_key, __, __ = get_required_content(
+            self.location.course_key,
+            self.get_parent().get_parent().location  # current subsection
+        )
+        if prerequisite_usage_key:
+            prerequisite_usage_key = BlockUsageLocator.from_string(prerequisite_usage_key)
+
+            try:
+                reset_student_attempts(self.location.course_key, user, prerequisite_usage_key, user, delete_module=True)
+            except ObjectDoesNotExist:
+                pass
+
+            button_text = _('Review the material')
+            url = reverse(
+                'jump_to',
+                kwargs={
+                    'course_id': self.location.course_key,
+                    'location': text_type(prerequisite_usage_key),
+                }
+            )
+        return button_text, url
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
