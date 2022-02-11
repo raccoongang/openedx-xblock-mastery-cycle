@@ -50,6 +50,15 @@ def get_course_block_access_transformers(user):
      return course_block_access_transformers
 ````
 
+## Testing
+
+Tests can be run in devstack with this command:
+
+```sh
+python manage.py lms --settings=test test mastery_cycle
+```
+
+
 ### Description
 
 #### Single Mastery Cycle Scenario 

@@ -5,6 +5,18 @@ function MasteryCycleXBlock(runtime, element) {
     let loadingClass = 'answer-loading';
     let modalOpenClass = 'dialog-modal-open';
     let handlerCheckProblemsUrl = runtime.handlerUrl(element, 'check_problems');
+    $('.problems-wrapper').on('progressChanged', function () {
+        let attempts = true;
+        $('.problems-wrapper').each(function () {
+            if (!$(this).data('attempts-used')) {
+                attempts = false;
+            }
+        })
+
+        if (attempts) {
+            $buttonCheckProblems.trigger('click');
+        }
+    })
 
     $buttonCheckProblems.click(function() {
         $body.addClass(loadingClass);
