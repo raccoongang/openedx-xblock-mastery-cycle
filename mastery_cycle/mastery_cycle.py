@@ -82,22 +82,6 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         contents = []
         child_context = {} if not context else copy(context)
 
-        mastered = len(self.mastered)
-        half_mastered = len(self.half_mastered)
-        questions_left = self.max_count - mastered
-
-        fragment.add_content(loader.render_django_template(
-            'static/html/progress_bar.html',
-            {
-                'done': self.done,
-                'mastered': mastered,
-                'half_mastered': half_mastered,
-                'questions_left': questions_left if questions_left > 0 else 0,
-                'max_count': self.max_count,
-            },
-            i18n_service=self.runtime.service(self, 'i18n')
-        ))
-
         if not self.done:
             for child in self._get_selected_child_blocks():
                 if child is None:
