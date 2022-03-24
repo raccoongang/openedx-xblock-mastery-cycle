@@ -1,10 +1,31 @@
 /* Javascript for MasteryCycleXBlock. */
 function MasteryCycleXBlock(runtime, element) {
     let $buttonCheckProblems = $('.js-check-problems', element);
+    let $buttonNext = $('.js-next-problem', element);
     let $body = $('body');
     let loadingClass = 'answer-loading';
     let modalOpenClass = 'dialog-modal-open';
     let handlerCheckProblemsUrl = runtime.handlerUrl(element, 'check_problems');
+    let problemIndex = 0;
+
+    const nextProblem = function() {
+        $(`.vert-${problemIndex}`, element).addClass('is-hidden');
+        problemIndex += 1;
+        $(`.vert-${problemIndex}`, element).removeClass('is-hidden');
+        $buttonNext.addClass('disabled');
+        $('.current-problem', element).text(problemIndex + 1);
+    }
+
+    $('.vert', element).each(function () {
+        if ($('.problems-wrapper', $(this)).data('attempts-used')) {
+            nextProblem();
+        }
+
+        if (!$(this).hasClass(`vert-${problemIndex}`)) {
+            $(this).addClass('is-hidden');
+        }
+    });
+
     $('.problems-wrapper').on('progressChanged', function () {
         let attempts = true;
         $('.problems-wrapper').each(function () {
@@ -16,7 +37,9 @@ function MasteryCycleXBlock(runtime, element) {
         if (attempts) {
             $buttonCheckProblems.trigger('click');
         }
-    })
+
+        $buttonNext.removeClass('disabled');
+    });
 
     $buttonCheckProblems.click(function() {
         $body.addClass(loadingClass);
@@ -58,4 +81,6 @@ function MasteryCycleXBlock(runtime, element) {
             }
         });
     });
+
+    $buttonNext.click(nextProblem);
 }
