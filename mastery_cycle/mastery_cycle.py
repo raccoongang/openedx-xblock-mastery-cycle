@@ -101,6 +101,11 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
                         'content': rendered_child.content,
                     })
 
+            fragment.add_content(loader.render_django_template(
+                'static/html/state.html',
+                {'length': len(contents)}
+            ))
+
             fragment.add_content(self.system.render_template('vert_module.html', {
                 'items': contents,
                 'xblock_context': context,
