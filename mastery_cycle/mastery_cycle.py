@@ -126,6 +126,14 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
 
     @XBlock.json_handler
     def check_problems(self, data, suffix=''):
+        if not self.selected:
+            return {
+                'status': 'error',
+                'msg': _('An error has occurred. Reload the page.'),
+                'button_text': _('Reload'),
+                'url': ''
+            }
+
         attempted_answers, correct_answers, incorrect_answers = self.review_answers()
 
         if attempted_answers != len(self.selected):
