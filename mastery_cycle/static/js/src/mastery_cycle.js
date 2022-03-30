@@ -67,7 +67,7 @@ function MasteryCycleXBlock(runtime, element) {
                             if (data.status === 'done') {
                                 $buttonCheckProblems.removeClass('js-mastery-cycle-not-done')
                                 $('.sequence-nav .button-next').trigger('click');
-                            } else if (data.status === 'not_done') {
+                            } else if (data.status === 'not_done' || data.status === 'error') {
                                 $body.addClass(loadingClass);
                                 if (data.url) {
                                     window.location.href = data.url;
