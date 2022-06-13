@@ -327,13 +327,13 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         num_to_add = max_count - len(selected_keys)
         added_block_keys = set()
 
-        # priority: incorrect, half_mastered, questions_left, mastered
-        for position, priority_keys in enumerate([incorrect_keys, half_mastered_keys, valid_block_keys, mastered_keys]):
+        # priority: incorrect, half_mastered, mastered, questions_left
+        for position, priority_keys in enumerate([incorrect_keys, half_mastered_keys, mastered_keys, valid_block_keys]):
 
             if num_to_add <= 0:
                 break
 
-            if position == 2:  # questions_left
+            if position == 3:  # questions_left
                 priority_keys = priority_keys - mastered_keys
 
             priority_keys = priority_keys - selected_keys
