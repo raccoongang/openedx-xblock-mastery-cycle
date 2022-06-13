@@ -171,7 +171,7 @@ class MasteryCycleXBlockTests(unittest.TestCase):
         self.assertListEqual(xblock.incorrect, [])
         self.assertEqual(xblock.pass_count, 2)
 
-    def test_make_selection_when_empty_incorrect_half_mastered_mastered(self):
+    def test_make_selection_when_empty_incorrect_and_half_mastered_and_mastered(self):
         # arrange:
         selected = []
         incorrect = []
@@ -197,7 +197,7 @@ class MasteryCycleXBlockTests(unittest.TestCase):
         self.assertEqual(len(result['overlimit']), 0)
         self.assertEqual(len(result['added']), 5)
 
-    def test_make_selection_when_empty_half_mastered_mastered_and_exist_incorrect(self):
+    def test_make_selection_when_empty_half_mastered_and_empty_mastered_and_exist_incorrect(self):
         # arrange:
         selected = []
         mastered = []
@@ -228,7 +228,7 @@ class MasteryCycleXBlockTests(unittest.TestCase):
         self.assertEqual(len(result['overlimit']), 0)
         self.assertEqual(len(result['added']), 3)
 
-    def test_make_selection_when_empty_mastered_and_exist_incorrect_half_mastered(self):
+    def test_make_selection_when_empty_mastered_and_exist_incorrect_and_exist_half_mastered(self):
         # arrange:
         selected = []
         mastered = []
@@ -266,13 +266,11 @@ class MasteryCycleXBlockTests(unittest.TestCase):
         self.assertEqual(len(result['overlimit']), 0)
         self.assertEqual(len(result['added']), 3)
 
-    def test_make_selection_when_exist_incorrect_half_mastered_mastered(self):
+    def test_make_selection_when_exist_incorrect_and_half_mastered_and_mastered(self):
         # arrange:
         selected = []
         mastered = [
             ['problem', 5],
-            ['problem', 6],
-            ['problem', 7],
         ]
         half_mastered = [
             ['problem', 1],
@@ -302,6 +300,49 @@ class MasteryCycleXBlockTests(unittest.TestCase):
         self.assertIn(('problem', 2), result['selected'])
         self.assertIn(('problem', 3), result['selected'])
         self.assertIn(('problem', 4), result['selected'])
+        self.assertIn(('problem', 5), result['selected'])
+        self.assertNotIn(('problem', 6), result['selected'])
+        self.assertNotIn(('problem', 7), result['selected'])
         self.assertEqual(len(result['invalid']), 0)
         self.assertEqual(len(result['overlimit']), 0)
         self.assertEqual(len(result['added']), 1)
+
+    def test_make_selection_when_exist_incorrect_and_exist_mastered_and_empty_half_mastered(self):
+        # arrange:
+        selected = []
+        mastered = [
+            ['problem', 5],
+            ['problem', 1],
+            ['problem', 2],
+            ['problem', 3],
+        ]
+        half_mastered = []
+        incorrect = [
+            ['problem', 4],
+        ]
+        children = [
+            mock.Mock(block_type='problem', block_id=1),
+            mock.Mock(block_type='problem', block_id=2),
+            mock.Mock(block_type='problem', block_id=3),
+            mock.Mock(block_type='problem', block_id=4),
+            mock.Mock(block_type='problem', block_id=5),
+            mock.Mock(block_type='problem', block_id=6),
+            mock.Mock(block_type='problem', block_id=7),
+        ]
+        max_count = 5
+
+        # act:
+        result = MasteryCycleXBlock.make_selection(selected, incorrect, half_mastered, mastered, children, max_count)
+
+        # assert:
+        self.assertEqual(len(result['selected']), 5)
+        self.assertIn(('problem', 1), result['selected'])
+        self.assertIn(('problem', 2), result['selected'])
+        self.assertIn(('problem', 3), result['selected'])
+        self.assertIn(('problem', 4), result['selected'])
+        self.assertIn(('problem', 5), result['selected'])
+        self.assertNotIn(('problem', 6), result['selected'])
+        self.assertNotIn(('problem', 7), result['selected'])
+        self.assertEqual(len(result['invalid']), 0)
+        self.assertEqual(len(result['overlimit']), 0)
+        self.assertEqual(len(result['added']), 4)
