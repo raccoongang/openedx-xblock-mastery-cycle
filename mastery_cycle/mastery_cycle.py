@@ -134,14 +134,7 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
                 'url': ''
             }
 
-        attempted_answers, correct_answers, incorrect_answers = self.review_answers()
-
-        if attempted_answers != len(self.selected):
-            return {
-                'status': 'not_all_answered',
-                'msg': _('Not all problems answered.'),
-                'button_text': _('Continue'),
-            }
+        correct_answers, incorrect_answers = self.review_answers()
 
         user = self.runtime.service(self, "user")._django_user
         self.save_student_data(correct_answers, incorrect_answers)
@@ -170,20 +163,18 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         }
 
     def review_answers(self):
-        attempted_answers = 0
         correct_answers = set()
         incorrect_answers = set()
 
         for block_type, block_id in self.selected:
             problem = self.runtime.get_block(self.location.course_key.make_usage_key(block_type, block_id))
-            attempted_answers += 1 if problem.is_attempted() else 0
 
             if problem.is_correct():
                 correct_answers.add((block_type, block_id))
             else:
                 incorrect_answers.add((block_type, block_id))
 
-        return attempted_answers, correct_answers, incorrect_answers
+        return correct_answers, incorrect_answers
 
     def save_student_data(self, correct_answers, incorrect_answers):
         mastered = {tuple(k) for k in self.mastered}

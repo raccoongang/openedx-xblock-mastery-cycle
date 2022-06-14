@@ -17,7 +17,8 @@ function MasteryCycleXBlock(runtime, element) {
     }
 
     $('.vert', element).each(function () {
-        if ($('.problems-wrapper', $(this)).data('attempts-used')) {
+        if ($('.problems-wrapper', $(this)).data('attempts-used') ||
+          $('.problems-wrapper', $(this)).data('time-is-over') === 'True') {
             nextProblem();
         }
 
@@ -26,31 +27,31 @@ function MasteryCycleXBlock(runtime, element) {
         }
     });
 
-    $('.problems-wrapper').on('progressChanged', function () {
+    $('.problems-wrapper').on('progressChanged timeIsOver', function () {
         let attempts = true;
         $('.problems-wrapper').each(function () {
-            if (!$(this).data('attempts-used')) {
+            if (!$(this).data('attempts-used') && $(this).data('time-is-over') === 'False') {
                 attempts = false;
             }
-        })
+        });
 
         if (attempts) {
             $buttonCheckProblems.trigger('click');
+        } else {
+            $buttonNext.removeClass('disabled');
         }
-
-        $buttonNext.removeClass('disabled');
     });
 
     $buttonCheckProblems.click(function() {
         $body.addClass(loadingClass);
-        $buttonCheckProblems.prop( "disabled", true );
+        $buttonCheckProblems.prop("disabled", true);
 
         $.ajax({
             type: "POST",
             url: handlerCheckProblemsUrl,
             data: JSON.stringify({}),
             success: function (data) {
-                $buttonCheckProblems.prop( "disabled", false );
+                $buttonCheckProblems.prop("disabled", false);
                 $body.removeClass(loadingClass).addClass(modalOpenClass);
 
                 $('#next-dialog #msg').html(data.msg);
@@ -65,7 +66,7 @@ function MasteryCycleXBlock(runtime, element) {
                             $body.removeClass(modalOpenClass);
 
                             if (data.status === 'done') {
-                                $buttonCheckProblems.removeClass('js-mastery-cycle-not-done')
+                                $buttonCheckProblems.removeClass('js-mastery-cycle-not-done');
                                 $('.sequence-nav .button-next').trigger('click');
                             } else if (data.status === 'not_done' || data.status === 'error') {
                                 $body.addClass(loadingClass);
@@ -82,5 +83,5 @@ function MasteryCycleXBlock(runtime, element) {
         });
     });
 
-    $buttonNext.click(nextProblem);
+    $buttonNext.on('click', nextProblem);
 }
