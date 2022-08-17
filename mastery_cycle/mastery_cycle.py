@@ -46,6 +46,11 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         scope=Scope.settings,
         default=1,
     )
+    question_timer_alert = String(
+        display_name=_('Question Timer Alert'),
+        scope=Scope.settings,
+        default=_('The question has been marked incorrect because it has timed out'),
+    )
 
     selected = List(default=[], scope=Scope.user_state)
     incorrect = List(default=[], scope=Scope.user_state)
@@ -58,7 +63,7 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
     has_score = True
     icon_class = 'problem'
     show_in_read_only_mode = True
-    editable_fields = ('display_name', 'max_count', )
+    editable_fields = ('display_name', 'max_count', 'question_timer_alert')
 
     def author_edit_view(self, context):
         """
@@ -116,9 +121,10 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
 
         fragment.add_content(loader.render_django_template(
             'static/html/mastery_cycle.html',
-            {'done': self.done},
+            {'done': self.done, 'question_timer_alert': self.question_timer_alert},
             i18n_service=self.runtime.service(self, 'i18n')
         ))
+        fragment.add_css(self.resource_string('static/css/mastery_cycle.css'))
         fragment.add_javascript(self.resource_string('static/js/src/mastery_cycle.js'))
         fragment.initialize_js('MasteryCycleXBlock')
 
