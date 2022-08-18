@@ -7,8 +7,10 @@ function MasteryCycleXBlock(runtime, element) {
     let modalOpenClass = 'dialog-modal-open';
     let handlerCheckProblemsUrl = runtime.handlerUrl(element, 'check_problems');
     let problemIndex = 0;
+    let $questionTimerAlert = $('.js-question-timer-alert', element);
 
     const nextProblem = function() {
+        $questionTimerAlert.hide();
         $(`.vert-${problemIndex}`, element).addClass('is-hidden');
         problemIndex += 1;
         $(`.vert-${problemIndex}`, element).removeClass('is-hidden');
@@ -27,7 +29,7 @@ function MasteryCycleXBlock(runtime, element) {
         }
     });
 
-    $('.problems-wrapper').on('progressChanged timeIsOver', function () {
+    $('.problems-wrapper').on('progressChanged timeIsOver', function (event) {
         let attempts = true;
         $('.problems-wrapper').each(function () {
             if (!$(this).data('attempts-used') && $(this).data('time-is-over') === 'False') {
@@ -39,6 +41,10 @@ function MasteryCycleXBlock(runtime, element) {
             $buttonCheckProblems.trigger('click');
         } else {
             $buttonNext.removeClass('disabled');
+        }
+
+        if (event.type === 'timeIsOver') {
+            $questionTimerAlert.show();
         }
     });
 
