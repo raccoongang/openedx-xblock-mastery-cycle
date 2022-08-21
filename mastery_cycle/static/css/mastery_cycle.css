@@ -1,4 +1,26 @@
 /* CSS for MasteryCycleXBlock */
+
+.mastery_cycle_block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    min-height: 240px;
+    padding-bottom: 10px;
+
+}
+
+.mastery_cycle_block .js-next-problem {
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 40px;
+}
+
+.mastery_cycle_block p {
+    width: 100%;
+    text-align: center;
+}
+
 .mastery_cycle_block .question-timer-message {
     color: #9e0505;
     padding: 10px;
