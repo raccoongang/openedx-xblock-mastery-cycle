@@ -346,3 +346,62 @@ class MasteryCycleXBlockTests(unittest.TestCase):
         self.assertEqual(len(result['invalid']), 0)
         self.assertEqual(len(result['overlimit']), 0)
         self.assertEqual(len(result['added']), 4)
+
+    def test_calculate_count_questions_when_first_pass(self):
+        # arrange:
+        xblock = self.make_one()
+        xblock.pass_count = 0
+        xblock.max_count = 10
+
+        # act:
+        count_questions = xblock.calculate_count_questions()
+
+        # assert:
+        self.assertEqual(count_questions, xblock.max_count)
+
+    def test_calculate_count_questions_when_passing_again(self):
+        # arrange:
+        xblock = self.make_one()
+        xblock.pass_count = 1
+        xblock.max_count = 10
+        xblock.mastered = [('problem', '7'), ('problem', '8'), ('problem', '9'), ('problem', '10')]
+        xblock.half_mastered = [('problem', '5'), ('problem', '6')]
+        xblock.incorrect = [('problem', '1'), ('problem', '2'), ('problem', '3'), ('problem', '4')]
+
+        # act:
+        count_questions = xblock.calculate_count_questions()
+
+        # assert:
+        self.assertEqual(count_questions, len(xblock.incorrect)+len(xblock.half_mastered))
+
+    def test_calculate_count_questions_on_repeat_pass(self):
+        # arrange:
+        xblock = self.make_one()
+        xblock.pass_count = 1
+        xblock.max_count = 10
+        xblock.mastered = [('problem', '7'), ('problem', '8'), ('problem', '9'), ('problem', '10')]
+        xblock.half_mastered = [('problem', '5'), ('problem', '6')]
+        xblock.incorrect = [('problem', '1'), ('problem', '2'), ('problem', '3'), ('problem', '4')]
+
+        # act:
+        count_questions = xblock.calculate_count_questions()
+
+        # assert:
+        self.assertEqual(count_questions, len(xblock.incorrect)+len(xblock.half_mastered))
+
+    def test_calculate_count_questions_on_repeat_pass_when_count_questions_is_less_than_min_count(self):
+        # arrange:
+        xblock = self.make_one()
+        xblock.pass_count = 1
+        xblock.max_count = 10
+        xblock.min_count = 5
+        xblock.mastered = [('problem', '7'), ('problem', '8'), ('problem', '9'),
+                           ('problem', '10'), ('problem', '5'), ('problem', '6')]
+        xblock.half_mastered = []
+        xblock.incorrect = [('problem', '1'), ('problem', '2'), ('problem', '3'), ('problem', '4')]
+
+        # act:
+        count_questions = xblock.calculate_count_questions()
+
+        # assert:
+        self.assertEqual(count_questions, xblock.min_count)
