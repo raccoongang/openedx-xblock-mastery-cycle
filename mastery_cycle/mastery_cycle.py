@@ -40,6 +40,11 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         scope=Scope.settings,
     )
 
+    min_count = Integer(
+        default=5,
+        scope=Scope.settings,
+    )
+
     weight = Float(
         display_name=_('Problem Weight'),
         help=_('Defines the number of points the problem is worth.'),
@@ -278,8 +283,9 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         This reads and updates the "selected" field, which has user_state scope.
         """
 
+        max_count = self.calculate_count_questions()
         block_keys = self.make_selection(
-            self.selected, self.incorrect, self.half_mastered, self.mastered, self.children, self.max_count
+            self.selected, self.incorrect, self.half_mastered, self.mastered, self.children, max_count
         )
 
         if any(block_keys[changed] for changed in ('invalid', 'overlimit', 'added')):
@@ -373,3 +379,19 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
             )
 
         return validation
+
+    def calculate_count_questions(self):
+        """
+        When re-passing, the number of displayed questions should be equal to (incorrect + half_mastered),
+        but not less than the self.min_count
+        """
+
+        count_questions = self.max_count
+
+        if self.pass_count:
+            count_questions = len(self.incorrect) + len(self.half_mastered)
+
+            if count_questions < self.min_count:
+                count_questions = self.min_count if self.min_count <= self.max_count else self.max_count
+
+        return count_questions
