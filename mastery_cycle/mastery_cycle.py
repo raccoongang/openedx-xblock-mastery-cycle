@@ -13,6 +13,8 @@ from xblock.fields import Integer, Scope, String, Float, List, Boolean
 from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin, StudioContainerXBlockMixin
 from xmodule.validation import StudioValidation, StudioValidationMessage
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError
 
 from lms.djangoapps.instructor.enrollment import reset_student_attempts
 
@@ -231,18 +233,33 @@ class MasteryCycleXBlock(StudioEditableXBlockMixin, StudioContainerXBlockMixin, 
         )
         if prerequisite_usage_key:
             prerequisite_usage_key = BlockUsageLocator.from_string(prerequisite_usage_key)
+            prerequisite_sequential = modulestore().get_item(prerequisite_usage_key)
+            first_vertical_location = None
 
-            try:
-                reset_student_attempts(self.location.course_key, user, prerequisite_usage_key, user, delete_module=True)
-            except ObjectDoesNotExist:
-                pass
+            for index, vertical in enumerate(prerequisite_sequential.get_children()):
+                if index == 0:
+                    first_vertical_location = vertical.location
+
+                for children in vertical.get_children():
+                    if children.location.block_type != 'video':
+
+                        try:
+                            reset_student_attempts(
+                                self.location.course_key,
+                                user,
+                                children.location,
+                                user,
+                                delete_module=True
+                            )
+                        except ObjectDoesNotExist:
+                            pass
 
             button_text = _('Review the material')
             url = reverse(
                 'jump_to',
                 kwargs={
                     'course_id': self.location.course_key,
-                    'location': text_type(prerequisite_usage_key),
+                    'location': text_type(first_vertical_location or prerequisite_usage_key),
                 }
             )
         return button_text, url
